@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 import org.bson.Document;
 import org.springframework.core.ParameterizedTypeReference;
@@ -22,13 +23,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
-public class Controller {
+public class TransactionController {
     private final WebClient webClient;
     private final List<String> paymentMethods;
     private final MongoClient mongoClient;
     private final MongoDatabase database;
 
-    public Controller(WebClient webClient, MongoClient mongoClient) {
+    public TransactionController(WebClient webClient, MongoClient mongoClient) {
         this.webClient = webClient;
         this.mongoClient = mongoClient;
         this.database = this.mongoClient.getDatabase("kirana-register-db");
@@ -89,6 +90,7 @@ public class Controller {
             String currency = TransactionModel.validateCurrency(currencies, transaction.getCurrency());
             String paymentMethod = TransactionModel.validatePaymentMethod(this.paymentMethods, transaction.getPaymentMethod());
             String customerId = TransactionModel.validateCustomerId(transaction.getCustomerId());
+            Date date = new Date();
 
             // System.out.println("Transaction ID: " + transactionId);
             System.out.println("Amount: " + amount);
@@ -97,18 +99,18 @@ public class Controller {
             System.out.println("Customer ID: " + customerId);
 
             Document transactionDocument = new Document()
-                // .append("transactionId", transactionId)
                 .append("amount", amount)
                 .append("currency", currency)
                 .append("paymentMethod", paymentMethod)
-                .append("customerId", customerId);
+                .append("customerId", customerId)
+                .append("date", date);
 
             this.database.getCollection("transactions").insertOne(transactionDocument);
 
             return ResponseEntity.ok(new HashMap<>() {
                 {
                     put("message", "Transaction recorded successfully.");
-                    put("transaction", transaction);
+                    put("transaction", transactionDocument);
                 }
             });
         }
@@ -117,7 +119,6 @@ public class Controller {
             return ResponseEntity.badRequest().body(new HashMap<>() {
                 {
                     put("error", e.getMessage());
-                    put("valid payment methods", paymentMethods);
                     put("transaction", transaction);
                 }
             });

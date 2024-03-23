@@ -5,7 +5,7 @@ import java.util.List;
 
 public class TransactionModel {
     
-    private String transactionId;
+    // private String transactionId;
     private float amount;
     private String currency;
     private String paymentMethod;
