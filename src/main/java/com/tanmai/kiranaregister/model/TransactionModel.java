@@ -1,0 +1,67 @@
+package com.tanmai.kiranaregister.model;
+
+import java.util.List;
+import java.util.Map;
+
+public class TransactionModel {
+    private float amount;
+    private String currency;
+    private String paymentMethod;
+    private String customerId;
+
+    public static float validateAmount(float amount) {
+        if(amount < 0) {
+            throw new IllegalArgumentException("Amount cannot be negative.");
+        }
+
+        return amount;
+    }
+
+    public static String validateCurrency(Map<String, Integer> currencies, String currency) {
+        if(currency == null || currency.isEmpty()) {
+            throw new IllegalArgumentException("Currency cannot be empty.");
+        }
+    
+        if(!currencies.containsKey(currency)) {
+            throw new IllegalArgumentException("Invalid Currency.");
+        }
+    
+        return currency;
+    }
+
+    public static String validatePaymentMethod( List<String> paymentMethods, String paymentMethod) {
+        if(paymentMethod == null || paymentMethod.isEmpty()) {
+            throw new IllegalArgumentException("Payment method cannot be empty.");
+        }
+
+        if(!paymentMethods.contains(paymentMethod)) {
+            throw new IllegalArgumentException("Invalid Payment Method.");
+        }
+
+        return paymentMethod;
+    }
+
+    public static String validateCustomerId(String customerId) {
+        if(customerId == null || customerId.isEmpty()) {
+            throw new IllegalArgumentException("Customer ID cannot be empty.");
+        }
+
+        return customerId;
+    }
+
+    public float getAmount() {
+        return this.amount;
+    }
+
+    public String getCurrency() {
+        return this.currency;
+    }
+
+    public String getPaymentMethod() {
+        return this.paymentMethod;
+    }
+
+    public String getCustomerId() {
+        return this.customerId;
+    }
+}
