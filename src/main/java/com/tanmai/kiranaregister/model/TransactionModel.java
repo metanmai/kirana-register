@@ -50,10 +50,7 @@ public class TransactionModel {
             throw new IllegalArgumentException("Payment method cannot be empty.");
         }
 
-        String acceptedMethods = "";
-
         for(String method : paymentMethods) {
-            acceptedMethods += method + ", ";
             if(method.equalsIgnoreCase(paymentMethod)) {
                 return paymentMethod.toLowerCase();
             }
