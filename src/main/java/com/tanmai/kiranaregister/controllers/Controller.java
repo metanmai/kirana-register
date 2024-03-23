@@ -1,5 +1,7 @@
 package com.tanmai.kiranaregister.controllers;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoDatabase;
 import com.tanmai.kiranaregister.model.TransactionModel;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -9,11 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.Document;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import reactor.core.publisher.Mono;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,30 +24,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 public class Controller {
     private final WebClient webClient;
-    private List<String> paymentMethods;
+    private final List<String> paymentMethods;
+    private final MongoClient mongoClient;
+    private final MongoDatabase database;
 
-    public Controller(WebClient webClient) {
+    public Controller(WebClient webClient, MongoClient mongoClient) {
         this.webClient = webClient;
-        this.paymentMethods = List.of("Cash", "UPI", "Card", "Netbanking");
+        this.mongoClient = mongoClient;
+        this.database = this.mongoClient.getDatabase("kirana-register-db");
+        this.paymentMethods = List.of("Cash", "Credit Card", "Debit Card", "Net Banking", "UPI");
     }
 
-    @GetMapping("/hello")
-    public String hello(@RequestParam(defaultValue="World") String name) {
-        return new String("Hello " + name + "!");
-    }
-
-    @GetMapping("/getJSON")
-    public Object getJson() {
-        Map<String, Object> jsonObj = new HashMap<>(), innerJsonObj = new HashMap<>() { {
-                put("Inner1", "InnerVal1");
-                put("Inner2", "InnerVal2");
-            }
-        };
-        
-        jsonObj.put("Hello", 1);
-        jsonObj.put("Tanmai", "Niranjan");
-        jsonObj.put("InnerJson", innerJsonObj);
-        return jsonObj;
+    @GetMapping("/test-database")
+    public String testDatabase() {
+        this.database.runCommand(new Document("ping", 1));
+        return new String("Pinged your deployment. You successfully connected to MongoDB!");
     }
 
     @SuppressWarnings("unchecked")
@@ -67,7 +60,7 @@ public class Controller {
         }
     }
 
-    @PostMapping("/transaction")
+    @PostMapping("/transact")
     public ResponseEntity<Map<String, Object>> recordTransaction(@RequestBody TransactionModel transaction) {
 
         try {
@@ -83,6 +76,13 @@ public class Controller {
             System.out.println("Payment Method: " + paymentMethod);
             System.out.println("Customer ID: " + customerId);
 
+            Document transactionDocument = new Document("amount", amount)
+                .append("currency", currency)
+                .append("paymentMethod", paymentMethod)
+                .append("customerId", customerId);
+
+            this.database.getCollection("transactions").insertOne(transactionDocument);
+
             return ResponseEntity.ok(new HashMap<>() {
                 {
                     put("message", "Transaction recorded successfully.");
@@ -95,6 +95,7 @@ public class Controller {
             return ResponseEntity.badRequest().body(new HashMap<>() {
                 {
                     put("error", e.getMessage());
+                    put("valid payment methods", paymentMethods);
                     put("transaction", transaction);
                 }
             });

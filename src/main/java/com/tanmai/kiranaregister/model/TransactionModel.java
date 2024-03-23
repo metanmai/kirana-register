@@ -1,12 +1,28 @@
 package com.tanmai.kiranaregister.model;
 
-import java.util.List;
-import java.util.Map;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.util.Map;
+import java.util.List;
+
+@Document(collection = "transactions")
 public class TransactionModel {
+    
+    @Id
+    private String transactionId;
+
+    @Field("amount")
     private float amount;
+
+    @Field("currency")
     private String currency;
+
+    @Field("paymentMethod")
     private String paymentMethod;
+
+    @Field("customerId")
     private String customerId;
 
     public static float validateAmount(float amount) {
@@ -29,16 +45,21 @@ public class TransactionModel {
         return currency;
     }
 
-    public static String validatePaymentMethod( List<String> paymentMethods, String paymentMethod) {
+    public static String validatePaymentMethod(List<String> paymentMethods, String paymentMethod) {
         if(paymentMethod == null || paymentMethod.isEmpty()) {
             throw new IllegalArgumentException("Payment method cannot be empty.");
         }
 
-        if(!paymentMethods.contains(paymentMethod)) {
-            throw new IllegalArgumentException("Invalid Payment Method.");
+        String acceptedMethods = "";
+
+        for(String method : paymentMethods) {
+            acceptedMethods += method + ", ";
+            if(method.equalsIgnoreCase(paymentMethod)) {
+                return paymentMethod.toLowerCase();
+            }
         }
 
-        return paymentMethod;
+        throw new IllegalArgumentException("Invalid Payment Method");
     }
 
     public static String validateCustomerId(String customerId) {
