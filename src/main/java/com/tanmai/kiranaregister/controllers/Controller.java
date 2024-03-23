@@ -60,23 +60,45 @@ public class Controller {
         }
     }
 
+    @GetMapping("/get-uuid")
+    public Mono<String> getUuid() {
+
+        try {
+            return webClient.get()
+            .uri("https://www.uuidtools.com/api/generate/v4")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .bodyToMono(new ParameterizedTypeReference<List<String>>() {})
+            .map(list -> list.get(0));
+        }
+
+        catch(Exception e) {
+            System.out.println("An error has occured: " + e.getMessage());
+            return Mono.empty();
+        }
+    }
+
     @PostMapping("/transact")
     public ResponseEntity<Map<String, Object>> recordTransaction(@RequestBody TransactionModel transaction) {
 
         try {
             Map<String, Integer> currencies = getCurrencies().block();
 
+            // String transactionId = getUuid().block();
             float amount = TransactionModel.validateAmount(transaction.getAmount());
             String currency = TransactionModel.validateCurrency(currencies, transaction.getCurrency());
             String paymentMethod = TransactionModel.validatePaymentMethod(this.paymentMethods, transaction.getPaymentMethod());
             String customerId = TransactionModel.validateCustomerId(transaction.getCustomerId());
 
+            // System.out.println("Transaction ID: " + transactionId);
             System.out.println("Amount: " + amount);
             System.out.println("Currency: " + currency);
             System.out.println("Payment Method: " + paymentMethod);
             System.out.println("Customer ID: " + customerId);
 
-            Document transactionDocument = new Document("amount", amount)
+            Document transactionDocument = new Document()
+                // .append("transactionId", transactionId)
+                .append("amount", amount)
                 .append("currency", currency)
                 .append("paymentMethod", paymentMethod)
                 .append("customerId", customerId);

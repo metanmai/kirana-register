@@ -1,28 +1,14 @@
 package com.tanmai.kiranaregister.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
 import java.util.Map;
 import java.util.List;
 
-@Document(collection = "transactions")
 public class TransactionModel {
     
-    @Id
     private String transactionId;
-
-    @Field("amount")
     private float amount;
-
-    @Field("currency")
     private String currency;
-
-    @Field("paymentMethod")
     private String paymentMethod;
-
-    @Field("customerId")
     private String customerId;
 
     public static float validateAmount(float amount) {
