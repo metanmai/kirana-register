@@ -3,6 +3,7 @@ package com.tanmai.kiranaregister.controllers;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.tanmai.kiranaregister.model.TransactionModel;
+import com.tanmai.kiranaregister.model.TransactionModel2;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -10,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Date;
 
 import org.bson.Document;
@@ -124,5 +126,82 @@ public class TransactionController {
             });
         }
     }
+
+    // @PostMapping("/transact2")
+    // public ResponseEntity<Map<String, Object>> recordTransaction2(@RequestBody TransactionModel2 transaction) {
+
+    //     try {
+    //         Map<String, Integer> currencies = getCurrencies().block();
+
+    //         // String transactionId = getUuid().block();
+    //         float amount = TransactionModel.validateAmount(transaction.getAmount());
+    //         String currency = TransactionModel.validateCurrency(currencies, transaction.getCurrency());
+    //         String paymentMethod = TransactionModel.validatePaymentMethod(this.paymentMethods, transaction.getPaymentMethod());
+    //         String customerId = TransactionModel.validateCustomerId(transaction.getCustomerId());
+    //         long dateNum = transaction.getDate();
+    //         Date date = new Date(dateNum);
+
+    //         // System.out.println("Transaction ID: " + transactionId);
+    //         System.out.println("Amount: " + amount);
+    //         System.out.println("Currency: " + currency);
+    //         System.out.println("Payment Method: " + paymentMethod);
+    //         System.out.println("Customer ID: " + customerId);
+    //         System.out.println("Date: " + date);
+    //         System.out.println("-------------------------------------------------------------");
+
+    //         Document transactionDocument = new Document()
+    //             .append("amount", amount)
+    //             .append("currency", currency)
+    //             .append("paymentMethod", paymentMethod)
+    //             .append("customerId", customerId)
+    //             .append("date", date);
+
+    //         this.database.getCollection("transactions").insertOne(transactionDocument);
+
+    //         return ResponseEntity.ok(new HashMap<>() {
+    //             {
+    //                 put("message", "Transaction recorded successfully.");
+    //                 put("transaction", transactionDocument);
+    //             }
+    //         });
+    //     }
+
+    //     catch(Exception e) {
+    //         return ResponseEntity.badRequest().body(new HashMap<>() {
+    //             {
+    //                 put("error", e.getMessage());
+    //                 put("transaction", transaction);
+    //             }
+    //         });
+    //     }
+    // }
     
+    // Function to populate the database with random transactions.
+    // @GetMapping("/fill-db")
+    // public void fillDatabase() {
+    //     for(int i = 0; i < 1000000; i++) {
+    //         float min = 1.0f; 
+    //         float max = 2000.0f;
+    //         Random random = new Random();
+
+    //         float randomNumber = min + (max - min) * random.nextFloat();
+    //         float amount = randomNumber;
+    //         List<String> currencies = List.of("USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "SEK", "NZD");
+    //         String currency = currencies.get(random.nextInt(currencies.size()));
+
+    //         List<String> paymentMethods = List.of("Cash", "Credit Card", "Debit Card", "Net Banking", "UPI");
+    //         String paymentMethod = paymentMethods.get(random.nextInt(paymentMethods.size()));
+
+    //         int mini = 100000;
+    //         int maxi = 1000000;
+    //         int customerId = random.nextInt(maxi - mini) + mini;
+
+    //         long minl = 1119827200000L;
+    //         long maxl = 1648565542000L;
+    //         long dateNum = (long) (minl + Math.random() * (maxl - minl));
+
+    //         TransactionModel2 transaction = new TransactionModel2(amount, currency, paymentMethod, String.valueOf(customerId), dateNum);
+    //         recordTransaction2(transaction);
+    //     }
+    // }
 }

@@ -1,11 +1,15 @@
 package com.tanmai.kiranaregister.controllers;
 
+import java.util.Date;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
+
 @RestController
-@RequestMapping("/reports")
+@RequestMapping("/analytics")
 public class ReportsController {
 
     public ReportsController() {}
@@ -24,4 +28,10 @@ public class ReportsController {
     public String getMonthlyReport() {
         return "Monthly Report";
     }
+    
+    @GetMapping("/yearly")
+    public String getYearlyReport() {
+        return "Yearly Report";
+    }
+    
 }
