@@ -30,7 +30,7 @@ class TransactionAnalytics {
     private static HashMap<String, Double> currencyRates;
 
     private static HashMap<String, Double> getCurrencyRates() {
-        if (currencyRates == null) {
+        if(currencyRates == null) {
             try {
                 WebClient webClient = WebClient.create();
 

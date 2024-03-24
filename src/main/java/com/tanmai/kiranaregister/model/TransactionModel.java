@@ -19,7 +19,7 @@ public class TransactionModel {
         return amount;
     }
 
-    public static String validateCurrency(HashMap<String, Integer> currencies, String currency) {
+    public static String validateCurrency(HashMap<String, Double> currencies, String currency) {
         if(currency == null || currency.isEmpty()) {
             throw new IllegalArgumentException("Currency cannot be empty.");
         }

@@ -6,7 +6,6 @@ import com.tanmai.kiranaregister.model.TransactionModel;
 import com.tanmai.kiranaregister.model.TransactionModel2;
 
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,27 +15,24 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.bson.Document;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import reactor.core.publisher.Mono;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 public class TransactionController {
-    private final WebClient webClient;
     private final List<String> paymentMethods;
     private final MongoClient mongoClient;
     private final MongoCollection<Document> collection;
+    private HashMap<String, Double> currencyRates;
 
-    public TransactionController(WebClient webClient, MongoClient mongoClient) {
-        this.webClient = webClient;
+    public TransactionController(MongoClient mongoClient, HashMap<String, Double> currencyRates) {
         this.mongoClient = mongoClient;
         this.collection = this.mongoClient.getDatabase("kirana-register-db").getCollection("transactions");
+        this.currencyRates = currencyRates;
         this.paymentMethods = List.of("Cash", "Credit Card", "Debit Card", "Net Banking", "UPI");
     }
 
@@ -46,47 +42,11 @@ public class TransactionController {
         return new String("Pinged your deployment. You successfully connected to MongoDB!");
     }
 
-    @SuppressWarnings("unchecked")
-    @GetMapping("/currencies")
-    public Mono<HashMap<String, Integer>> getCurrencies() {
-        try {
-            return webClient.get()
-            .uri("https://api.fxratesapi.com/latest")
-            .accept(MediaType.APPLICATION_JSON)
-            .retrieve()
-            .bodyToMono(new ParameterizedTypeReference<HashMap<String, Object>>() {})
-            .map(responseBody -> (HashMap<String, Integer>) responseBody.get("rates"));
-        }
-
-        catch(Exception e) {
-            System.out.println("An error has occured: " + e.getMessage());
-            return Mono.empty();
-        }
-    }
-
-    @GetMapping("/get-uuid")
-    public Mono<String> getUuid() {
-
-        try {
-            return webClient.get()
-            .uri("https://www.uuidtools.com/api/generate/v4")
-            .accept(MediaType.APPLICATION_JSON)
-            .retrieve()
-            .bodyToMono(new ParameterizedTypeReference<List<String>>() {})
-            .map(list -> list.get(0));
-        }
-
-        catch(Exception e) {
-            System.out.println("An error has occured: " + e.getMessage());
-            return Mono.empty();
-        }
-    }
-
     @PostMapping("/transact")
     public ResponseEntity<Map<String, Object>> recordTransaction(@RequestBody TransactionModel transaction) {
 
         try {
-            HashMap<String, Integer> currencies = getCurrencies().block();
+            HashMap<String, Double> currencies = this.currencyRates;
 
             // String transactionId = getUuid().block();
             float amount = TransactionModel.validateAmount(transaction.getAmount());
@@ -128,14 +88,14 @@ public class TransactionController {
         }
     }
 
-    @PostMapping("/transact2")
-    public ResponseEntity<HashMap<String, Object>> recordTransaction2(@RequestBody List<TransactionModel2> transactions) {
+    @PostMapping("/transact-db")
+    private ResponseEntity<HashMap<String, Object>> recordTransaction2(@RequestBody List<TransactionModel2> transactions) {
 
         try {
             List<Document> transactionDocuments = new ArrayList<>();
             int k = 1;
             for(TransactionModel2 transaction : transactions) {
-                HashMap<String, Integer> currencies = getCurrencies().block();
+                HashMap<String, Double> currencies = this.currencyRates;
 
                 // String transactionId = getUuid().block();
                 float amount = TransactionModel.validateAmount(transaction.getAmount());
