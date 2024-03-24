@@ -1,7 +1,10 @@
 package com.tanmai.kiranaregister;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 
@@ -11,6 +14,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.web.context.annotation.RequestScope;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @SpringBootApplication
@@ -41,24 +47,54 @@ public class KiranaRegisterApplication {
 
 	@Configuration
 	public class CurrencyConfig {
+		private final WebClient webClient;
 
-		@SuppressWarnings("unchecked")
+		public CurrencyConfig(WebClient webClient) {
+			this.webClient = webClient;
+		}
+
 		@Bean
+		@RequestScope
 		public HashMap<String, Double> currencyRates() {
+			System.out.println("----------------------------------------------------------------");
+			System.out.println("Here");
+			HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+			StringBuffer requestUrl = request.getRequestURL();
+			String servletPath = request.getServletPath();
+			int endIndex = requestUrl.indexOf(servletPath);
+			String baseUrl = requestUrl.substring(0, endIndex);
+
+			System.out.println("----------------------------------------------------------------");
+			System.out.println("Base URL: " + baseUrl);
+
 			try {
-				return WebClient.create().get()
-				.uri("https://api.fxratesapi.com/latest")
-				.accept(MediaType.APPLICATION_JSON)
-				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<HashMap<String, Object>>() {})
-				.map(responseBody -> (HashMap<String, Double>) responseBody.get("rates"))
-				.block();
+                HashMap<String, Double> currencyRates = this.webClient.get()
+					.uri(baseUrl + "/currencies")
+					.accept(MediaType.APPLICATION_JSON)
+					.retrieve()
+					.bodyToMono(new ParameterizedTypeReference<HashMap<String, Double>>() {})
+					.block();
+
+                System.out.println("Fetched currency rates: " + currencyRates);
+                return currencyRates;
 			}
 	
 			catch(Exception e) {
 				System.out.println("Could not fetch currency rates: " + e.getMessage());
 				throw e;
 			}
+		}
+	}
+
+	@Configuration
+	public class RateLimitConfig {
+
+		private static final int requestsPerMinute = 10;
+		private final RateLimiter rateLimiter = RateLimiter.create(requestsPerMinute / 60.0);
+
+		@Bean
+		public RateLimiter rateLimiter() {
+			return rateLimiter;
 		}
 	}
 }
