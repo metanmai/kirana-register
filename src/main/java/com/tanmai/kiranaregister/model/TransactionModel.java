@@ -1,6 +1,6 @@
 package com.tanmai.kiranaregister.model;
 
-import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 
 public class TransactionModel {
@@ -19,7 +19,7 @@ public class TransactionModel {
         return amount;
     }
 
-    public static String validateCurrency(Map<String, Integer> currencies, String currency) {
+    public static String validateCurrency(HashMap<String, Integer> currencies, String currency) {
         if(currency == null || currency.isEmpty()) {
             throw new IllegalArgumentException("Currency cannot be empty.");
         }
