@@ -19,21 +19,15 @@ import com.mongodb.client.MongoCollection;
 
 import reactor.core.publisher.Mono;
 import org.springframework.http.MediaType;
-// import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @Service
 class TransactionAnalytics {
-    // private final WebClient webClient;
     private static HashMap<String, Double> currencyRates;
-
-    // @Autowired
-    // private TransactionAnalytics(WebClient webClient) {
-    //     this.webClient = webClient;
-    // }
 
     private static HashMap<String, Double> getCurrencyRates() {
         if (currencyRates == null) {
@@ -64,10 +58,64 @@ class TransactionAnalytics {
         return transactions.size();
     }
 
+    public static HashMap<String, Integer> getTransactionCountByMonth(List<HashMap<String, Object>> transactions) {
+        HashMap<String, Integer> transactionsByMonth = new HashMap<>();
+
+        for(HashMap<String, Object> transaction : transactions) {
+            String month = ((Date) transaction.get("date")).toString().split(" ")[1];
+
+            if(transactionsByMonth.containsKey(month)) {
+                transactionsByMonth.put(month, transactionsByMonth.get(month) + 1);
+            } 
+            
+            else {
+                transactionsByMonth.put(month, 1);
+            }
+        }
+
+        return transactionsByMonth;
+    }
+
+    public static Map<String, Integer> getTransactionCountByPaymentMethod(List<HashMap<String, Object>> transactions) {
+        Map<String, Integer> paymentMethodCounts = new HashMap<>();
+
+        for(HashMap<String, Object> transaction : transactions) {
+            String paymentMethod = (String) transaction.get("paymentMethod");
+
+            if(paymentMethodCounts.containsKey(paymentMethod)) {
+                paymentMethodCounts.put(paymentMethod, paymentMethodCounts.get(paymentMethod) + 1);
+            } 
+            
+            else {
+                paymentMethodCounts.put(paymentMethod, 1);
+            }
+        }
+
+        return paymentMethodCounts;
+    }
+
+    public static HashMap<String, Integer> getTransactionCountByCurrency(List<HashMap<String, Object>> transactions) {
+        HashMap<String, Integer> transactionCountByCurrency = new HashMap<>();
+
+        for(HashMap<String, Object> transaction : transactions) {
+            String currency = (String) transaction.get("currency");
+
+            if(transactionCountByCurrency.containsKey(currency)) {
+                transactionCountByCurrency.put(currency, transactionCountByCurrency.get(currency) + 1);
+            } 
+            
+            else {
+                transactionCountByCurrency.put(currency, 1);
+            }
+        }
+
+        return transactionCountByCurrency;
+    }
+
     public static double getTotalRevenue(List<HashMap<String, Object>> transactions) {
         double totalRevenue = 0.0;
 
-        for (HashMap<String, Object> transaction : transactions) {
+        for(HashMap<String, Object> transaction : transactions) {
             double revenue;
 
             if(transaction.get("currency").equals("USD")) {
@@ -82,6 +130,37 @@ class TransactionAnalytics {
         }
 
         return totalRevenue;
+    }
+
+    public static double getAverageTransactionValue(List<HashMap<String, Object>> transactions) {
+        return getTotalRevenue(transactions) / getTransactionCount(transactions);
+    }
+
+    public static HashMap<String, Double> getRevenueByMonth(List<HashMap<String, Object>> transactions) {
+        HashMap<String, Double> revenueByMonth = new HashMap<>();
+
+        for(HashMap<String, Object> transaction : transactions) {
+            String month = ((Date) transaction.get("date")).toString().split(" ")[1];
+            double amount;
+
+            if(transaction.get("currency").equals("USD")) {
+                amount = (double) transaction.get("amount");
+            } 
+            
+            else {
+                amount = (double) transaction.get("amount") / getCurrencyRates().get(transaction.get("currency"));
+            }
+
+            if(revenueByMonth.containsKey(month)) {
+                revenueByMonth.put(month, revenueByMonth.get(month) + amount);
+            } 
+            
+            else {
+                revenueByMonth.put(month, amount);
+            }
+        }
+
+        return revenueByMonth;
     }
 }
 
@@ -119,8 +198,12 @@ public class ReportsController {
             return new HashMap<> () {
                 {
                     put("transactionCount", TransactionAnalytics.getTransactionCount(transactions));
+                    put("transactionsByMonth", TransactionAnalytics.getTransactionCountByMonth(transactions));
+                    put("transactionCountByPaymentMethod", TransactionAnalytics.getTransactionCountByPaymentMethod(transactions));
+                    put("transactionCountByCurrency", TransactionAnalytics.getTransactionCountByCurrency(transactions));
                     put("totalRevenue(USD)", TransactionAnalytics.getTotalRevenue(transactions));
-                    put("transactions", transactions);
+                    put("averageTransactionValue(USD)", TransactionAnalytics.getAverageTransactionValue(transactions));
+                    put("revenueByMonth", TransactionAnalytics.getRevenueByMonth(transactions));
                 }
             };
 
@@ -132,42 +215,64 @@ public class ReportsController {
         }
     }
 
-    @GetMapping("/weekly")
-    public String getWeeklyReport() {
-        return "Weekly Report";
-    }
-
-    @GetMapping("/monthly")
-    public String getMonthlyReport() {
-        return "Monthly Report";
-    }
-    
-    @GetMapping("/yearly")
-    public ResponseEntity<HashMap<String, Object>> getYearlyReport() {
+    @GetMapping("/{period}")
+    public ResponseEntity<HashMap<String, Object>> getReport(@PathVariable String period) {
         Calendar startCalendar1 = Calendar.getInstance(), startCalendar2 = Calendar.getInstance();
+        Date startDate1, startDate2;
+        Date endDate = new Date();
 
-        startCalendar1.set(Calendar.MONTH, Calendar.JANUARY);
-        startCalendar1.set(Calendar.DAY_OF_MONTH, 1);
-        startCalendar1.set(Calendar.HOUR_OF_DAY, 0);
-        startCalendar1.set(Calendar.MINUTE, 0);
-        startCalendar1.set(Calendar.SECOND, 0);
-        startCalendar1.set(Calendar.MILLISECOND, 0);
-
-        startCalendar2.set(Calendar.YEAR, startCalendar2.get(Calendar.YEAR) - 1);
-
-        Date startDate1 = startCalendar1.getTime(), startDate2 = startCalendar2.getTime(), endDate = new Date();
-        System.out.println("startDate1: " + startDate1 + " startDate2: " + startDate2 + " endDate: " + endDate + "\n");
         System.out.println("Fetching transactions...\n");
 
-        HashMap<String, Object> yearToDate = fetchTransactions(startDate1, endDate);
-        HashMap<String, Object> lastYear = fetchTransactions(startDate2, endDate);
+        switch(period) {
+            case "weekly":
+                startCalendar1.add(Calendar.DAY_OF_MONTH, -7);
 
-        return ResponseEntity.ok(new HashMap<>() {
-            {
-                put("YTD", yearToDate);
-                put("lastYear", lastYear);
-            }
-        });
+                startDate1 = startCalendar1.getTime();
+
+                return ResponseEntity.ok(fetchTransactions(startDate1, endDate));
+
+            case "monthly":
+                startCalendar1.set(Calendar.MONTH, Calendar.JANUARY);
+                startCalendar1.set(Calendar.DAY_OF_MONTH, 1);
+                startCalendar1.set(Calendar.HOUR_OF_DAY, 0);
+                startCalendar1.set(Calendar.MINUTE, 0);
+                startCalendar1.set(Calendar.SECOND, 0);
+                startCalendar1.set(Calendar.MILLISECOND, 0);
+        
+                startCalendar2.add(Calendar.MONTH, -1);
+
+                startDate1 = startCalendar1.getTime();
+                startDate2 = startCalendar2.getTime();
+
+                return ResponseEntity.ok(new HashMap<>() {
+                    {
+                        put("MTD", fetchTransactions(startDate1, endDate));
+                        put("lastMonth", fetchTransactions(startDate2, endDate));
+                    }
+                });
+
+            case "yearly":
+                startCalendar1.set(Calendar.MONTH, Calendar.JANUARY);
+                startCalendar1.set(Calendar.DAY_OF_MONTH, 1);
+                startCalendar1.set(Calendar.HOUR_OF_DAY, 0);
+                startCalendar1.set(Calendar.MINUTE, 0);
+                startCalendar1.set(Calendar.SECOND, 0);
+                startCalendar1.set(Calendar.MILLISECOND, 0);
+
+                startCalendar2.set(Calendar.YEAR, startCalendar2.get(Calendar.YEAR) - 1);
+
+                startDate1 = startCalendar1.getTime();
+                startDate2 = startCalendar2.getTime();
+
+                return ResponseEntity.ok(new HashMap<>() {
+                    {
+                        put("YTD", fetchTransactions(startDate1, endDate));
+                        put("lastYear", fetchTransactions(startDate2, endDate));
+                    }
+                });
+        
+            default:
+                throw new IllegalArgumentException("Invalid period.");
+        }
     }
-    
 }
