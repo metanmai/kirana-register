@@ -13,12 +13,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 
 import reactor.core.publisher.Mono;
 import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -168,9 +170,11 @@ class TransactionAnalytics {
 @RequestMapping("/reports")
 public class ReportsController {
     private final MongoCollection<Document> collection;
+    private final RateLimiter rateLimiter;
 
-    public ReportsController(MongoClient mongoClient) {
+    public ReportsController(MongoClient mongoClient, @Qualifier("reportRateLimiter") RateLimiter rateLimiter) {
         this.collection = mongoClient.getDatabase("kirana-register-db").getCollection("transactions");
+        this.rateLimiter = rateLimiter;
     }
 
     public HashMap<String, Object> fetchTransactions(Date startDate, Date endDate) {
@@ -217,62 +221,69 @@ public class ReportsController {
 
     @GetMapping("/{period}")
     public ResponseEntity<HashMap<String, Object>> getReport(@PathVariable String period) {
-        Calendar startCalendar1 = Calendar.getInstance(), startCalendar2 = Calendar.getInstance();
-        Date startDate1, startDate2;
-        Date endDate = new Date();
+        if(rateLimiter.tryAcquire()) {
+            
+            Calendar startCalendar1 = Calendar.getInstance(), startCalendar2 = Calendar.getInstance();
+            Date startDate1, startDate2;
+            Date endDate = new Date();
 
-        System.out.println("Fetching transactions...\n");
+            System.out.println("Fetching transactions...\n");
 
-        switch(period) {
-            case "weekly":
-                startCalendar1.add(Calendar.DAY_OF_MONTH, -7);
+            switch(period) {
+                case "weekly":
+                    startCalendar1.add(Calendar.DAY_OF_MONTH, -7);
 
-                startDate1 = startCalendar1.getTime();
+                    startDate1 = startCalendar1.getTime();
 
-                return ResponseEntity.ok(fetchTransactions(startDate1, endDate));
+                    return ResponseEntity.ok(fetchTransactions(startDate1, endDate));
 
-            case "monthly":
-                startCalendar1.set(Calendar.MONTH, Calendar.JANUARY);
-                startCalendar1.set(Calendar.DAY_OF_MONTH, 1);
-                startCalendar1.set(Calendar.HOUR_OF_DAY, 0);
-                startCalendar1.set(Calendar.MINUTE, 0);
-                startCalendar1.set(Calendar.SECOND, 0);
-                startCalendar1.set(Calendar.MILLISECOND, 0);
-        
-                startCalendar2.add(Calendar.MONTH, -1);
+                case "monthly":
+                    startCalendar1.set(Calendar.MONTH, Calendar.JANUARY);
+                    startCalendar1.set(Calendar.DAY_OF_MONTH, 1);
+                    startCalendar1.set(Calendar.HOUR_OF_DAY, 0);
+                    startCalendar1.set(Calendar.MINUTE, 0);
+                    startCalendar1.set(Calendar.SECOND, 0);
+                    startCalendar1.set(Calendar.MILLISECOND, 0);
+            
+                    startCalendar2.add(Calendar.MONTH, -1);
 
-                startDate1 = startCalendar1.getTime();
-                startDate2 = startCalendar2.getTime();
+                    startDate1 = startCalendar1.getTime();
+                    startDate2 = startCalendar2.getTime();
 
-                return ResponseEntity.ok(new HashMap<>() {
-                    {
-                        put("MTD", fetchTransactions(startDate1, endDate));
-                        put("lastMonth", fetchTransactions(startDate2, endDate));
-                    }
-                });
+                    return ResponseEntity.ok(new HashMap<>() {
+                        {
+                            put("MTD", fetchTransactions(startDate1, endDate));
+                            put("lastMonth", fetchTransactions(startDate2, endDate));
+                        }
+                    });
 
-            case "yearly":
-                startCalendar1.set(Calendar.MONTH, Calendar.JANUARY);
-                startCalendar1.set(Calendar.DAY_OF_MONTH, 1);
-                startCalendar1.set(Calendar.HOUR_OF_DAY, 0);
-                startCalendar1.set(Calendar.MINUTE, 0);
-                startCalendar1.set(Calendar.SECOND, 0);
-                startCalendar1.set(Calendar.MILLISECOND, 0);
+                case "yearly":
+                    startCalendar1.set(Calendar.MONTH, Calendar.JANUARY);
+                    startCalendar1.set(Calendar.DAY_OF_MONTH, 1);
+                    startCalendar1.set(Calendar.HOUR_OF_DAY, 0);
+                    startCalendar1.set(Calendar.MINUTE, 0);
+                    startCalendar1.set(Calendar.SECOND, 0);
+                    startCalendar1.set(Calendar.MILLISECOND, 0);
 
-                startCalendar2.set(Calendar.YEAR, startCalendar2.get(Calendar.YEAR) - 1);
+                    startCalendar2.set(Calendar.YEAR, startCalendar2.get(Calendar.YEAR) - 1);
 
-                startDate1 = startCalendar1.getTime();
-                startDate2 = startCalendar2.getTime();
+                    startDate1 = startCalendar1.getTime();
+                    startDate2 = startCalendar2.getTime();
 
-                return ResponseEntity.ok(new HashMap<>() {
-                    {
-                        put("YTD", fetchTransactions(startDate1, endDate));
-                        put("lastYear", fetchTransactions(startDate2, endDate));
-                    }
-                });
-        
-            default:
-                throw new IllegalArgumentException("Invalid period.");
+                    return ResponseEntity.ok(new HashMap<>() {
+                        {
+                            put("YTD", fetchTransactions(startDate1, endDate));
+                            put("lastYear", fetchTransactions(startDate2, endDate));
+                        }
+                    });
+            
+                default:
+                    throw new IllegalArgumentException("Invalid period.");
+            }
+        }
+
+        else {
+            throw new RuntimeException("Rate limit exceeded. Try again later.");
         }
     }
 }

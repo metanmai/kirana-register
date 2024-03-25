@@ -89,12 +89,23 @@ public class KiranaRegisterApplication {
 	@Configuration
 	public class RateLimitConfig {
 
-		private static final int requestsPerMinute = 10;
-		private final RateLimiter rateLimiter = RateLimiter.create(requestsPerMinute / 60.0);
-
-		@Bean
-		public RateLimiter rateLimiter() {
-			return rateLimiter;
+		private final int requestsPerMinuteCurrency = 10;
+		private final int requestsPerMinuteTransaction = 5;
+		private final int requestsPerMinuteReport = 20;
+	
+		@Bean(name = "currencyRateLimiter")
+		public RateLimiter currencyRateLimiter() {
+			return RateLimiter.create(requestsPerMinuteCurrency / 60.0);
+		}
+	
+		@Bean(name = "transactionRateLimiter")
+		public RateLimiter transactionRateLimiter() {
+			return RateLimiter.create(requestsPerMinuteTransaction / 60.0);
+		}
+	
+		@Bean(name = "reportRateLimiter")
+		public RateLimiter reportRateLimiter() {
+			return RateLimiter.create(requestsPerMinuteReport / 60.0);
 		}
 	}
 }

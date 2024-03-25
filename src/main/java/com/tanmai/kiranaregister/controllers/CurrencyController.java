@@ -7,7 +7,7 @@ import com.google.common.util.concurrent.RateLimiter;
 
 import java.util.HashMap;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,12 +16,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RestController
 public class CurrencyController {
     private final WebClient webClient;
-    
-    @Autowired
     private RateLimiter rateLimiter;
 
-    public CurrencyController(WebClient webClient, RateLimiter rateLimiter) {
+    public CurrencyController(WebClient webClient, @Qualifier("currencyRateLimiter") RateLimiter rateLimiter) {
         this.webClient = webClient;
+        this.rateLimiter = rateLimiter;
     }
     
     @SuppressWarnings("unchecked")

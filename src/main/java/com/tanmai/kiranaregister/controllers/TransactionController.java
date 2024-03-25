@@ -1,5 +1,6 @@
 package com.tanmai.kiranaregister.controllers;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.tanmai.kiranaregister.model.TransactionModel;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -28,12 +30,14 @@ public class TransactionController {
     private final MongoClient mongoClient;
     private final MongoCollection<Document> collection;
     private HashMap<String, Double> currencyRates;
+    private RateLimiter rateLimiter;
 
-    public TransactionController(MongoClient mongoClient, HashMap<String, Double> currencyRates) {
+    public TransactionController(MongoClient mongoClient, HashMap<String, Double> currencyRates, @Qualifier("transactionRateLimiter") RateLimiter rateLimiter) {
         this.mongoClient = mongoClient;
         this.collection = this.mongoClient.getDatabase("kirana-register-db").getCollection("transactions");
         this.currencyRates = currencyRates;
         this.paymentMethods = List.of("Cash", "Credit Card", "Debit Card", "Net Banking", "UPI");
+        this.rateLimiter = rateLimiter;
     }
 
     @GetMapping("/test-database")
@@ -44,47 +48,52 @@ public class TransactionController {
 
     @PostMapping("/transact")
     public ResponseEntity<Map<String, Object>> recordTransaction(@RequestBody TransactionModel transaction) {
+        if(rateLimiter.tryAcquire()) {
+            try {
+                HashMap<String, Double> currencies = this.currencyRates;
 
-        try {
-            HashMap<String, Double> currencies = this.currencyRates;
+                // String transactionId = getUuid().block();
+                float amount = TransactionModel.validateAmount(transaction.getAmount());
+                String currency = TransactionModel.validateCurrency(currencies, transaction.getCurrency());
+                String paymentMethod = TransactionModel.validatePaymentMethod(this.paymentMethods, transaction.getPaymentMethod());
+                String customerId = TransactionModel.validateCustomerId(transaction.getCustomerId());
+                Date date = new Date();
 
-            // String transactionId = getUuid().block();
-            float amount = TransactionModel.validateAmount(transaction.getAmount());
-            String currency = TransactionModel.validateCurrency(currencies, transaction.getCurrency());
-            String paymentMethod = TransactionModel.validatePaymentMethod(this.paymentMethods, transaction.getPaymentMethod());
-            String customerId = TransactionModel.validateCustomerId(transaction.getCustomerId());
-            Date date = new Date();
+                // System.out.println("Transaction ID: " + transactionId);
+                System.out.println("Amount: " + amount);
+                System.out.println("Currency: " + currency);
+                System.out.println("Payment Method: " + paymentMethod);
+                System.out.println("Customer ID: " + customerId);
 
-            // System.out.println("Transaction ID: " + transactionId);
-            System.out.println("Amount: " + amount);
-            System.out.println("Currency: " + currency);
-            System.out.println("Payment Method: " + paymentMethod);
-            System.out.println("Customer ID: " + customerId);
+                Document transactionDocument = new Document()
+                    .append("amount", amount)
+                    .append("currency", currency)
+                    .append("paymentMethod", paymentMethod)
+                    .append("customerId", customerId)
+                    .append("date", date);
 
-            Document transactionDocument = new Document()
-                .append("amount", amount)
-                .append("currency", currency)
-                .append("paymentMethod", paymentMethod)
-                .append("customerId", customerId)
-                .append("date", date);
+                this.collection.insertOne(transactionDocument);
 
-            this.collection.insertOne(transactionDocument);
+                return ResponseEntity.ok(new HashMap<>() {
+                    {
+                        put("message", "Transaction recorded successfully.");
+                        put("transaction", transactionDocument);
+                    }
+                });
+            }
 
-            return ResponseEntity.ok(new HashMap<>() {
-                {
-                    put("message", "Transaction recorded successfully.");
-                    put("transaction", transactionDocument);
-                }
-            });
+            catch(Exception e) {
+                return ResponseEntity.badRequest().body(new HashMap<>() {
+                    {
+                        put("error", e.getMessage());
+                        put("transaction", transaction);
+                    }
+                });
+            }
         }
 
-        catch(Exception e) {
-            return ResponseEntity.badRequest().body(new HashMap<>() {
-                {
-                    put("error", e.getMessage());
-                    put("transaction", transaction);
-                }
-            });
+        else {
+            throw new RuntimeException("Rate limit exceeded. Try again later.");
         }
     }
 
