@@ -27,6 +27,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+
+/*
+ * The TransactionAnalytics class contains methods to analyze transaction data.
+ * It contains methods to calculate the total number of transactions, the number of transactions by month,
+ * the number of transactions by payment method, the number of transactions by currency, the total revenue,
+ * the average transaction value, and the revenue by month.
+ */
 @Service
 class TransactionAnalytics {
     private static HashMap<String, Double> currencyRates;
@@ -166,9 +173,17 @@ class TransactionAnalytics {
     }
 }
 
+/*
+ * The ReportsController class contains the endpoints to fetch reports for transactions.
+ * It contains endpoints to fetch reports for transactions in the last week, month, and year.
+ */
 @RestController
 @RequestMapping("/reports")
 public class ReportsController {
+    /*
+     * The collection field is a MongoCollection object that represents the "transactions" collection in the database.
+     * The rateLimiter field is a RateLimiter object that limits the rate of incoming requests.
+     */
     private final MongoCollection<Document> collection;
     private final RateLimiter rateLimiter;
 
@@ -176,7 +191,10 @@ public class ReportsController {
         this.collection = mongoClient.getDatabase("kirana-register-db").getCollection("transactions");
         this.rateLimiter = rateLimiter;
     }
-
+    
+    /*
+     * The fetchTransactions method fetches transactions between the given start and end dates.
+     */
     public HashMap<String, Object> fetchTransactions(Date startDate, Date endDate) {
         try {
             Document query = new Document("date", new Document("$gte", startDate).append("$lt", endDate));
@@ -219,6 +237,10 @@ public class ReportsController {
         }
     }
 
+    /*
+     * The getReport method fetches the report for transactions in the given period.
+     * It returns the report for the last week, month, or year.
+     */
     @GetMapping("/{period}")
     public ResponseEntity<HashMap<String, Object>> getReport(@PathVariable String period) {
         if(rateLimiter.tryAcquire()) {

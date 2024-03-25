@@ -24,8 +24,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+
+/*
+ * The TransactionController class is a Spring Boot REST controller that handles HTTP requests related to transactions.
+ * It contains methods to record transactions and populate the database with random transactions.
+ */
 @RestController
 public class TransactionController {
+
+    /*
+     * The paymentMethods field is a list of valid payment methods.
+     * The mongoClient field is a MongoClient object that connects to the MongoDB database.
+     * The collection field is a MongoCollection object that represents the "transactions" collection in the database.
+     * The currencyRates field is a HashMap that stores the currency rates.
+     * The rateLimiter field is a RateLimiter object that limits the rate of incoming requests.
+     */
     private final List<String> paymentMethods;
     private final MongoClient mongoClient;
     private final MongoCollection<Document> collection;
@@ -40,19 +53,23 @@ public class TransactionController {
         this.rateLimiter = rateLimiter;
     }
 
+    /*
+     * Endpoint to test the database connection.
+     */
     @GetMapping("/test-database")
     public String testDatabase() {
         this.mongoClient.getDatabase("kirana-register-db").runCommand(new Document("ping", 1));
         return new String("Pinged your deployment. You successfully connected to MongoDB!");
     }
 
+    /*
+     * Endpoint to record a transaction.
+     */
     @PostMapping("/transact")
     public ResponseEntity<Map<String, Object>> recordTransaction(@RequestBody TransactionModel transaction) {
         if(rateLimiter.tryAcquire()) {
             try {
                 HashMap<String, Double> currencies = this.currencyRates;
-
-                // String transactionId = getUuid().block();
                 float amount = TransactionModel.validateAmount(transaction.getAmount());
                 String currency = TransactionModel.validateCurrency(currencies, transaction.getCurrency());
                 String paymentMethod = TransactionModel.validatePaymentMethod(this.paymentMethods, transaction.getPaymentMethod());
@@ -97,7 +114,10 @@ public class TransactionController {
         }
     }
 
-    @PostMapping("/transact-db")
+    /*
+     * Endpoint to record multiple transactions (Mainly for populating db).
+     */
+    @PostMapping("/transact-many")
     private ResponseEntity<HashMap<String, Object>> recordTransaction2(@RequestBody List<TransactionModel2> transactions) {
 
         try {
@@ -153,7 +173,9 @@ public class TransactionController {
         }
     }
     
-    // Function to populate the database with random transactions.
+    /*
+     * Endpoint to fill the database with random transactions.
+     */
     @GetMapping("/fill-db")
     public ResponseEntity<HashMap<String, Object>> fillDatabase(@RequestParam int items) {
         System.out.println("Filling database with random transactions...");

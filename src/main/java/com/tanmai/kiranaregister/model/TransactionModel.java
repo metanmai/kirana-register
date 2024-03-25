@@ -3,6 +3,9 @@ package com.tanmai.kiranaregister.model;
 import java.util.HashMap;
 import java.util.List;
 
+/*
+ * The TransactionModel class is a model class that represents a transaction.
+ */
 public class TransactionModel {
     
     // private String transactionId;

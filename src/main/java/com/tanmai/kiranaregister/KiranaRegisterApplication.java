@@ -19,6 +19,12 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/*
+ * The KiranaRegisterApplication class is the entry point for the Spring Boot application.
+ * It contains the main method that starts the Spring Boot application.
+ * It also contains the configuration for the WebClient, MongoClient, currencyRates and RateLimiter beans.
+ */
+
 @SpringBootApplication
 public class KiranaRegisterApplication {
 
@@ -26,6 +32,9 @@ public class KiranaRegisterApplication {
 		SpringApplication.run(KiranaRegisterApplication.class, args);
 	}
 
+	/*
+	 * The WebClientConfig class contains the configuration for the WebClient bean.
+	 */
 	@Configuration
 	public class WebClientConfig {
 
@@ -35,6 +44,9 @@ public class KiranaRegisterApplication {
 		}
 	}
 
+	/*
+	 * The MongoClientConfig class contains the configuration for the MongoClient bean.
+	 */
 	@Configuration
 	public class MongoClientConfig {
 		// private final String mongodbConnectionString;
@@ -45,6 +57,10 @@ public class KiranaRegisterApplication {
 		}
 	}
 
+	/*
+	 * The CurrencyConfig class contains the configuration for the currencyRates bean.
+	 * It fetches the currency rates from the currency service and stores them in a HashMap.
+	 */
 	@Configuration
 	public class CurrencyConfig {
 		private final WebClient webClient;
@@ -84,6 +100,10 @@ public class KiranaRegisterApplication {
 		}
 	}
 
+	/*
+	 * The RateLimitConfig class contains the configuration for the RateLimiter beans.
+	 * It creates RateLimiter beans for the currency, transaction and report endpoints.
+	 */
 	@Configuration
 	public class RateLimitConfig {
 

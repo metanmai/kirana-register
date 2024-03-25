@@ -3,6 +3,10 @@ package com.tanmai.kiranaregister.model;
 import java.util.Map;
 import java.util.List;
 
+/*
+ * The TransactionModel2 class is a model class that represents a transaction.
+ * This is an updated version of the TransactionModel class, with a new date field.
+ */
 public class TransactionModel2 {
     
     // private String transactionId;

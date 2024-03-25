@@ -13,9 +13,16 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 
-
+/*
+ * The CurrencyController class contains the endpoints to fetch latest currency conversion rates.
+ */
 @RestController
 public class CurrencyController {
+    /*
+     * The webClient field is a WebClient object that makes HTTP requests to the currency conversion API.
+     * The rateLimiter field is a RateLimiter object that limits the rate of incoming requests.
+     * The cachedCurrencyRates field is a HashMap that stores the currency rates fetched from the API.
+     */
     private final WebClient webClient;
     private RateLimiter rateLimiter;
     private HashMap<String, Double> cachedCurrencyRates;
@@ -25,11 +32,17 @@ public class CurrencyController {
         this.rateLimiter = rateLimiter;
     }
 
+    /*
+     * Scheduled method to clear the cached currency rates every hour.
+     */
     @Scheduled(fixedRate = 3600000)
     public void clearCache() {
         this.cachedCurrencyRates = null;
     }
     
+    /*
+     * Endpoint to fetch the latest currency conversion rates.
+     */
     @SuppressWarnings("unchecked")
     @GetMapping("/currencies")
     public HashMap<String, Double> getCurrencies() {
