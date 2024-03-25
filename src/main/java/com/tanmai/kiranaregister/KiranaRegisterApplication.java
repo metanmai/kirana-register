@@ -6,18 +6,27 @@ import com.mongodb.client.MongoClients;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+// import java.io.IOException;
 import java.util.HashMap;
 
+// import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+// import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+// import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+// import org.springframework.security.web.SecurityFilterChain;
+// import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.web.context.annotation.RequestScope;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.reactive.function.client.WebClient;
+// import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+// import static org.springframework.security.config.Customizer.withDefaults;
 
 /*
  * The KiranaRegisterApplication class is the entry point for the Spring Boot application.
@@ -31,6 +40,42 @@ public class KiranaRegisterApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(KiranaRegisterApplication.class, args);
 	}
+
+	// @Configuration
+	// @EnableWebSecurity
+	// public class SecurityConfig {
+
+	// 	@Value("${okta.oauth2.issuer}")
+	// 	private String issuer;
+	// 	@Value("${okta.oauth2.client-id}")
+	// 	private String clientId;
+
+	// 	@Bean
+	// 	public SecurityFilterChain configure(HttpSecurity http) throws Exception {
+	// 		http
+	// 			.authorizeHttpRequests(authorize -> authorize
+	// 				.requestMatchers("/").permitAll()
+	// 				.anyRequest().authenticated()
+	// 			)
+	// 			.oauth2Login(withDefaults())
+
+	// 			// configure logout with Auth0
+	// 			.logout(logout -> logout
+	// 				.addLogoutHandler(logoutHandler()));
+	// 		return http.build();
+	// 	}
+
+	// 	private LogoutHandler logoutHandler() {
+	// 		return (request, response, authentication) -> {
+	// 			try {
+	// 				String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+	// 				response.sendRedirect(issuer + "v2/logout?client_id=" + clientId + "&returnTo=" + baseUrl);
+	// 			} catch (IOException e) {
+	// 				throw new RuntimeException(e);
+	// 			}
+	// 		};
+	// 	}
+	// }
 
 	/*
 	 * The WebClientConfig class contains the configuration for the WebClient bean.

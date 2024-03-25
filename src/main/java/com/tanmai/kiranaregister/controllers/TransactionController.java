@@ -53,6 +53,23 @@ public class TransactionController {
         this.rateLimiter = rateLimiter;
     }
 
+    @GetMapping("/home")
+    public HashMap<String, Object> home() {
+        return new HashMap<>() {
+            {
+                put("message", "Welcome to Kirana Register API.");
+                put("endpoints", List.of(
+                    "GET /test-database",
+                    "POST /transact",
+                    "POST /transact-many",
+                    "GET /fill-db",
+                    "GET /currencies",
+                    "GET /reports/{period} (period: weekly, monthly, yearly)"
+                ));
+            }
+        };
+    }
+
     /*
      * Endpoint to test the database connection.
      */
