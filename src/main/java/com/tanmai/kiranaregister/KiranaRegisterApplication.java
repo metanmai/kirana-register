@@ -56,8 +56,6 @@ public class KiranaRegisterApplication {
 		@Bean
 		@RequestScope
 		public HashMap<String, Double> currencyRates() {
-			System.out.println("----------------------------------------------------------------");
-			System.out.println("Here");
 			HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
 			StringBuffer requestUrl = request.getRequestURL();
 			String servletPath = request.getServletPath();

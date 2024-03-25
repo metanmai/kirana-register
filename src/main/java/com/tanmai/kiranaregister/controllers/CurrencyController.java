@@ -1,6 +1,7 @@
 package com.tanmai.kiranaregister.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.common.util.concurrent.RateLimiter;
@@ -17,16 +18,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class CurrencyController {
     private final WebClient webClient;
     private RateLimiter rateLimiter;
+    private HashMap<String, Double> cachedCurrencyRates;
 
     public CurrencyController(WebClient webClient, @Qualifier("currencyRateLimiter") RateLimiter rateLimiter) {
         this.webClient = webClient;
         this.rateLimiter = rateLimiter;
+    }
+
+    @Scheduled(fixedRate = 3600000)
+    public void clearCache() {
+        this.cachedCurrencyRates = null;
     }
     
     @SuppressWarnings("unchecked")
     @GetMapping("/currencies")
     public HashMap<String, Double> getCurrencies() {
         System.out.println("Fetching currency rates...");
+
+        if(this.cachedCurrencyRates != null) {
+            return this.cachedCurrencyRates;
+        }
 
         if(rateLimiter.tryAcquire()) {
             try {
@@ -38,21 +49,21 @@ public class CurrencyController {
 				.map(responseBody -> (HashMap<String, Double>) responseBody.get("rates"))
 				.block();
 
-                HashMap<String, Double> newCurrencyRates = new HashMap<>();
+                this.cachedCurrencyRates = new HashMap<>();
 
                 for(String currency : currencyRates.keySet()) {
                     if(currencyRates.get(currency) instanceof Double) {
-                        newCurrencyRates.put(currency, currencyRates.get(currency));
+                        this.cachedCurrencyRates.put(currency, currencyRates.get(currency));
                     }
 
                     else {
                         // WHYYYYYY
                         Object val = currencyRates.get(currency);
-                        newCurrencyRates.put(currency, Double.valueOf((Integer) val));
+                        this.cachedCurrencyRates.put(currency, Double.valueOf((Integer) val));
                     }
                 }
-
-                return newCurrencyRates;
+                
+                return this.cachedCurrencyRates;
 			}
 	
 			catch(Exception e) {
